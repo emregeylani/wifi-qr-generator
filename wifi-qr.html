@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WiFi QR Üretici</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F5F0E8;
+    --ink: #1A1208;
+    --rust: #C04A1A;
+    --gold: #D4A843;
+    --muted: #8A7A6A;
+    --card: #FDFAF4;
+  }
+
+  body {
+    background: var(--cream);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-image: 
+      radial-gradient(ellipse at 20% 50%, rgba(212,168,67,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(192,74,26,0.06) 0%, transparent 50%);
+  }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  header {
+    margin-bottom: 32px;
+    text-align: center;
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--ink);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--ink);
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1.5px solid rgba(26,18,8,0.12);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 4px 24px rgba(26,18,8,0.06), 0 1px 3px rgba(26,18,8,0.04);
+  }
+
+  .field {
+    margin-bottom: 18px;
+  }
+
+  label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+    font-weight: 500;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--cream);
+    border: 1.5px solid rgba(26,18,8,0.14);
+    border-radius: 9px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--rust);
+    box-shadow: 0 0 0 3px rgba(192,74,26,0.1);
+  }
+
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 44px; }
+  .toggle-pw {
+    position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    cursor: pointer; color: var(--muted);
+    font-size: 16px; padding: 4px;
+    transition: color 0.2s;
+  }
+  .toggle-pw:hover { color: var(--ink); }
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px 14px;
+    background: var(--cream);
+    border: 1.5px solid rgba(26,18,8,0.14);
+    border-radius: 9px;
+    font-size: 13px;
+    color: var(--ink);
+    user-select: none;
+    transition: border-color 0.2s;
+  }
+  .checkbox-field:hover { border-color: rgba(26,18,8,0.25); }
+  .checkbox-field input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--rust);
+    cursor: pointer;
+  }
+
+  .generate-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--ink);
+    color: var(--cream);
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .generate-btn:hover { background: #2D2010; }
+  .generate-btn:active { transform: scale(0.99); }
+
+  /* ── QR output ─────────────────────────────── */
+  .output {
+    display: none;
+    margin-top: 20px;
+  }
+  .output.visible { display: block; }
+
+  .qr-card {
+    background: #fff;
+    border: 1.5px solid rgba(26,18,8,0.1);
+    border-radius: 16px;
+    padding: 28px 24px 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .qr-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--rust), var(--gold));
+  }
+
+  .qr-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  #qr-container {
+    display: inline-block;
+    padding: 12px;
+    background: #fff;
+    border-radius: 8px;
+  }
+  #qr-container canvas, #qr-container img {
+    display: block;
+    border-radius: 4px;
+  }
+
+  .ssid-display {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--ink);
+    margin-top: 14px;
+    letter-spacing: -0.3px;
+  }
+
+  .hint {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 0.03em;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .btn-secondary {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: 1.5px solid rgba(26,18,8,0.18);
+    border-radius: 9px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    letter-spacing: 0.04em;
+  }
+  .btn-secondary:hover {
+    background: var(--cream);
+    border-color: rgba(26,18,8,0.3);
+  }
+
+  .format-note {
+    margin-top: 20px;
+    padding: 13px 16px;
+    background: rgba(212,168,67,0.1);
+    border: 1px solid rgba(212,168,67,0.3);
+    border-radius: 10px;
+    font-size: 11px;
+    color: #7A5C10;
+    line-height: 1.6;
+  }
+  .format-note strong { color: #5A3E08; }
+
+  .compat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .chip {
+    padding: 3px 10px;
+    background: rgba(26,18,8,0.06);
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">📶</div>
+      <h1>WiFi QR</h1>
+    </div>
+    <p class="subtitle">Evrensel QR Üretici · iOS & Android</p>
+  </header>
+
+  <div class="card">
+    <div class="field">
+      <label>Ağ Adı (SSID)</label>
+      <input type="text" id="ssid" placeholder="Ev WiFi'ı" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="field">
+      <label>Şifre</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" placeholder="WiFi şifresi" autocomplete="off" spellcheck="false" id="pw">
+        <button class="toggle-pw" id="togglePw" type="button" title="Göster/Gizle">👁</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Güvenlik Türü</label>
+      <select id="security">
+        <option value="WPA">WPA / WPA2 / WPA3 (önerilen)</option>
+        <option value="WEP">WEP (eski)</option>
+        <option value="nopass">Şifresiz (açık ağ)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Ağ Görünürlüğü</label>
+      <label class="checkbox-field">
+        <input type="checkbox" id="hidden">
+        Gizli ağ (hidden SSID)
+      </label>
+    </div>
+
+    <button class="generate-btn" onclick="generate()">QR Kodu Üret</button>
+  </div>
+
+  <div class="output" id="output">
+    <div class="qr-card">
+      <p class="qr-label">WiFi'ya Bağlanmak İçin Tara</p>
+      <div id="qr-container"></div>
+      <p class="ssid-display" id="ssid-display"></p>
+      <p class="hint">Kamerayı QR koda tut → otomatik bağlan</p>
+      <div class="actions">
+        <button class="btn-secondary" onclick="downloadQR()">⬇ İndir (PNG)</button>
+        <button class="btn-secondary" onclick="printQR()">🖨 Yazdır</button>
+      </div>
+    </div>
+
+    <div class="format-note">
+      <strong>✓ Evrensel format kullanıldı:</strong> Bu QR, <code>WIFI:T:WPA;S:…;P:…;;</code> standardını kullanır. 
+      iOS 11+, Android 10+, Samsung, Xiaomi, OPPO ve tüm modern telefonlarda native kamera uygulamasıyla doğrudan çalışır — ek uygulama gerekmez.
+      <div class="compat-chips">
+        <span class="chip">iPhone (iOS 11+)</span>
+        <span class="chip">Android 10+</span>
+        <span class="chip">Samsung</span>
+        <span class="chip">Xiaomi / MIUI</span>
+        <span class="chip">Huawei</span>
+        <span class="chip">Google Pixel</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Toggle password visibility
+  document.getElementById('togglePw').addEventListener('click', function() {
+    const pw = document.getElementById('password');
+    if (pw.type === 'password') { pw.type = 'text'; this.textContent = '🙈'; }
+    else { pw.type = 'password'; this.textContent = '👁'; }
+  });
+
+  function escapeWifi(str) {
+    // Escape special chars per WiFi QR spec: \ ; , " :
+    return str.replace(/\\/g, '\\\\')
+              .replace(/;/g, '\\;')
+              .replace(/,/g, '\\,')
+              .replace(/"/g, '\\"')
+              .replace(/:/g, '\\:');
+  }
+
+  function generate() {
+    const ssid = document.getElementById('ssid').value.trim();
+    const password = document.getElementById('password').value;
+    const security = document.getElementById('security').value;
+    const hidden = document.getElementById('hidden').checked;
+
+    if (!ssid) { alert('Lütfen ağ adını (SSID) girin.'); return; }
+    if (security !== 'nopass' && !password) { alert('Lütfen WiFi şifresini girin.'); return; }
+
+    // Build universal WiFi QR string
+    const s = escapeWifi(ssid);
+    const p = escapeWifi(password);
+    const h = hidden ? 'true' : 'false';
+
+    let wifiString;
+    if (security === 'nopass') {
+      wifiString = `WIFI:T:nopass;S:${s};H:${h};;`;
+    } else {
+      wifiString = `WIFI:T:${security};S:${s};P:${p};H:${h};;`;
+    }
+
+    // Clear previous
+    const container = document.getElementById('qr-container');
+    container.innerHTML = '';
+
+    // Generate with high error correction (Q level = 25% damage tolerance)
+    new QRCode(container, {
+      text: wifiString,
+      width: 220,
+      height: 220,
+      correctLevel: QRCode.CorrectLevel.Q,
+      colorDark: '#1A1208',
+      colorLight: '#ffffff'
+    });
+
+    document.getElementById('ssid-display').textContent = ssid;
+    document.getElementById('output').classList.add('visible');
+    document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function getCanvas() {
+    return document.querySelector('#qr-container canvas');
+  }
+
+  function downloadQR() {
+    const canvas = getCanvas();
+    if (!canvas) return;
+    const ssid = document.getElementById('ssid').value.trim() || 'wifi';
+    const link = document.createElement('a');
+    link.download = `wifi-qr-${ssid.replace(/\s+/g,'-')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  function printQR() {
+    const canvas = getCanvas();
+    if (!canvas) return;
+    const ssid = document.getElementById('ssid').value.trim();
+    const img = canvas.toDataURL('image/png');
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>WiFi QR - ${ssid}</title>
+      <style>
+        body { display:flex; flex-direction:column; align-items:center; justify-content:center;
+               min-height:100vh; font-family: Georgia, serif; background:#fff; }
+        img { width:260px; height:260px; }
+        h2 { margin-top:16px; font-size:22px; color:#1A1208; }
+        p { color:#888; font-size:12px; margin-top:6px; font-family:monospace; }
+        @media print { button { display:none; } }
+      </style></head>
+      <body>
+        <img src="${img}">
+        <h2>${ssid}</h2>
+        <p>WiFi'ya bağlanmak için tara</p>
+        <button onclick="window.print()" style="margin-top:20px;padding:10px 24px;cursor:pointer;">🖨 Yazdır</button>
+      </body></html>
+    `);
+    win.document.close();
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') generate();
+  });
+</script>
+</body>
+</html>
